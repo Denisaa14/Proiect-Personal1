@@ -1,0 +1,150 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Transaction>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Panou de Control - Buget</h1>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body text-center">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Venituri Totale</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalIncome.ToString("N2") RON</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body text-center">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Cheltuieli Totale</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalExpense.ToString("N2") RON</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body text-center">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Balanță (Sold)</div>
+                <div class="h5 mb-0 font-weight-bold @(ViewBag.Balance >= 0 ? "text-success" : "text-danger")">
+                    @ViewBag.Balance.ToString("N2") RON
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 offset-md-3">
+        <div class="card shadow">
+            <div class="card-body">
+                <h3 class="text-center">Distribuția Cheltuielilor</h3>
+                <div style="height: 300px;">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr />
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a asp-action="Create" class="btn btn-success">
+            <i class="fas fa-plus"></i> Adaugă Tranzacție Nouă
+        </a>
+    </div>
+    <div class="col-md-6">
+        <form asp-action="Index" method="get" class="form-inline float-right">
+            <div class="input-group">
+                <input type="text" name="searchString" class="form-control" placeholder="Caută după titlu..." value="@Context.Request.Query["searchString"]" />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Caută
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Title)</th>
+            <th>@Html.DisplayNameFor(model => model.Amount)</th>
+            <th>@Html.DisplayNameFor(model => model.Category)</th>
+            <th>@Html.DisplayNameFor(model => model.Type)</th>
+            <th>@Html.DisplayNameFor(model => model.Date)</th>
+            <th>Acțiuni</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Title)</td>
+                <td style="color: @(item.Type == "Income" ? "green" : "red"); font-weight: bold;">
+                    @(item.Type == "Income" ? "+" : "-") @item.Amount RON
+                </td>
+                <td>@Html.DisplayFor(modelItem => item.Category)</td>
+                <td>
+                    <span class="badge @(item.Type == "Income" ? "bg-success" : "bg-danger")">
+                        @item.Type
+                    </span>
+                </td>
+                <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.TransactionId" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@item.TransactionId" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var ctx = document.getElementById('myChart').getContext('2d');
+
+            // Preluăm datele trimise din Controller
+            var labels = @Html.Raw(Json.Serialize(ViewBag.Categories));
+            var dataValues = @Html.Raw(Json.Serialize(ViewBag.Amounts));
+
+            // Verificăm dacă avem date de afișat
+            if (labels && labels.length > 0) {
+                var myChart = new Chart(ctx, {
+                    type: 'doughnut', 
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                            ],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            } else {
+                // Mesaj în caz că nu sunt cheltuieli
+                ctx.font = "16px Arial";
+                ctx.fillText("Adaugă o cheltuială pentru a vedea graficul", 10, 50);
+            }
+        });
+    </script>
+}
